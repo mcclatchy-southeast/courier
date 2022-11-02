@@ -47,7 +47,7 @@ parse_bulk_pk <- function(resp) {
 #' @examples
 #' \dontrun{
 #' #create a test dataframe
-#' loc_test <- tibble(
+#' loc_test <- dplyr::tibble(
 #'   location_name = rep(NA, 7),
 #'   street_address = c('421 Fayetteville St', '2619 Western Blvd', '319 Fayetteville St',
 #'                      '1205 Front Street', '2505 Atlantic Ave', '827 W Morgan St',
@@ -57,10 +57,10 @@ parse_bulk_pk <- function(resp) {
 #'   postal_code = c("27601", '27606', '27601', '27609','27604', '27603', '27601'),
 #'   iso_country_code = rep('US', 7)
 #' ) %>%
-#'   slice(rep(1:n(), each = 1443))
+#'   dplyr::slice(rep(1:dplyr::n(), each = 1443))
 #' #test the bulk uploader
 #' loc_test_pk <- loc_test %>%
-#'   mutate(placekey = get_placekeys(
+#'   dplyr::mutate(placekey = get_placekeys(
 #'     location_name,
 #'     street_address,
 #'     city,
@@ -134,7 +134,7 @@ get_placekeys <- function(
 
     # discard any NA values so that lat & long are included or removed as needed
     queries <- map(.x, discard, is.na)
-    cat('>>> GETTING BATCH', .y, 'AT', Sys.time(), '\n')
+    cat('>>> GETTING BATCH', .y, 'AT',  as.character(Sys.time()), '\n')
 
     # if we reach the 101st we sleep the remainder of the minute (if any is left)
     if ((.y > 1) & (.y %% 100 == 1)) {
@@ -155,13 +155,14 @@ get_placekeys <- function(
                          body = list(queries = queries, options = options_list),
                          httr::add_headers(apikey = key), encode = "json",
                          times = 3)
-    #print(content(query))
+
     # parse the bulk placekey response
     parse_bulk_pk(query)
-
   })
 
   # make into character vector
   unlist(resp)
+
+  cat('>>> QUERIES FINISHED AT', as.character(Sys.time()), 'AFTER', Sys.time() - start, 'SECONDS\n' )
 
 }

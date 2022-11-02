@@ -38,7 +38,7 @@ Create a dataframe with 10,000+ addresses to submit.
 
 ``` r
 #create a test dataframe
-loc_test <- tibble(
+loc_test <- dplyr::tibble(
   location_name = rep(NA, 7),
   street_address = c('421 Fayetteville St', '2619 Western Blvd', '319 Fayetteville St',
                     '1205 Front Street', '2505 Atlantic Ave', '827 W Morgan St',
@@ -48,7 +48,7 @@ loc_test <- tibble(
   postal_code = c("27601", '27606', '27601', '27609','27604', '27603', '27601'),
   iso_country_code = rep('US', 7)
   ) %>%
-  slice(rep(1:n(), each = 1443))
+  dplyr::slice(rep(1:dplyr::n(), each = 1443))
 ```
 
 Use the bulk uploader with `dplyr`, making sure to set your API key in
@@ -60,7 +60,7 @@ Sys.setenv(PLACEKEY_SECRET = '<<YOUR-PLACEKEY-API-KEY-HERE>>')
 
 #Hit the API in bulk and return placekeys
 loc_test_pk <- loc_test %>%
-  mutate(placekey = get_placekeys(
+  dplyr::mutate(placekey = get_placekeys(
     location_name,
     street_address,
     city,
