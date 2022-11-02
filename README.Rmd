@@ -76,7 +76,8 @@ loc_test_pk <- loc_test %>%
     city,
     region,
     postal_code,
-    iso_country_code)
+    iso_country_code,
+    verbose = TRUE)
     )
 ```
 

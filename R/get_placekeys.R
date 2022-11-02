@@ -31,6 +31,7 @@ parse_bulk_pk <- function(resp) {
 #' @param strict_name_match  If set to `TRUE`, a Placekey is only returned if all
 #' fields identify the POI as having the exact name specified. Optional.
 #' Default `FALSE`.
+#' @param verbose Include logging to the console. Default `FALSE`.
 #' @param key API key obtained from [https://www.placekey.io/](https://www.placekey.io/)
 #' @param ... Unused; allows \code{purrr::pmap_chr} to call \code{get_placekey}
 #' with columns not used in the Placekey call.
@@ -81,11 +82,12 @@ get_placekeys <- function(
     longitude = NA,
     strict_address_match = FALSE,
     strict_name_match = FALSE,
+    verbose = FALSE,
     key = Sys.getenv("PLACEKEY_SECRET"),
     ...
 ) {
 
-
+  #set options list
   options_list <- list(
     strict_name_match = strict_name_match,
     strict_address_match = strict_address_match
@@ -99,7 +101,9 @@ get_placekeys <- function(
 
   # figure out how many batches need to be made
   n_chunks <- ceiling(length(street_address)/ n)
-  cat('>>> QUERY NEEDS', n_chunks, 'BATCHES\n')
+  if(verbose){
+    cat('>>> QUERY NEEDS', n_chunks, 'BATCHES\n')
+  }
 
   # find the indexes of the chunks
   chunk_starts <- seq(1, n*n_chunks, by = n)
@@ -131,23 +135,34 @@ get_placekeys <- function(
 
   # start counting. only 100 bulk requests a min.
   start <- Sys.time()
-  chunk_start <- Sys.time()
+  if(verbose){
+    cat('>>> STARTING QUERY AT', as.character(start), '\n')
+  }
+
   resp <- imap(bulk_queries, .f = ~{
 
     # discard any NA values so that lat & long are included or removed as needed
     queries <- map(.x, discard, is.na)
-    cat('>>> GETTING BATCH', .y, 'AT',  as.character(Sys.time()), '\n')
+    if(verbose){
+      cat('>>> GETTING BATCH', .y, 'AT',  as.character(Sys.time()), '\n')
+    }
 
     # if we reach the 101st we sleep the remainder of the minute (if any is left)
     if ((.y > 1) & (.y %% 100 == 1)) {
 
-      #integer division
-      remainder <- (.y %/% 100) * 60 - (Sys.time() - start)
+      #integer division with seconds only
+      remainder <- (.y %/% 100) * 60 - (as.numeric(Sys.time()) - as.numeric(start))
 
       if (remainder > 0) {
-        cat('>>> SLEEPING FOR', remainder, 'SECONDS AT', as.character(Sys.time()),'\n')
+        if(verbose){
+          cat('>>> SLEEPING FOR', remainder, 'SECONDS AT', as.character(Sys.time()),'\n')
+        }
+
         Sys.sleep(remainder)
-        cat('>>> RESTARTING AT', as.character(Sys.time()), '\n')
+
+        if(verbose){
+          cat('>>> RESTARTING AT', as.character(Sys.time()), '\n')
+        }
       }
     }
 
@@ -165,8 +180,10 @@ get_placekeys <- function(
   # make into character vector
   unlist(resp)
 
-  total_time <- lubridate::seconds_to_period(Sys.time() - chunk_start)
+  total_time <- lubridate::seconds_to_period(as.numeric(Sys.time()) - as.numeric(start))
 
-  cat('>>> QUERIES FINISHED AT', as.character(Sys.time()), 'AFTER', total_time, '\n' )
+  if(verbose){
+    cat('>>> QUERIES FINISHED AT', as.character(Sys.time()), 'AFTER', as.character(total_time), '\n' )
+  }
 
 }
