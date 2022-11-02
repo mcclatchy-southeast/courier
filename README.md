@@ -1,7 +1,12 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# courier
+                             _          
+      _________  __  _______(_)__  _____
+     / ___/ __ \/ / / / ___/ / _ \/ ___/
+    / /__/ /_/ / /_/ / /  / /  __/ /    
+    \___/\____/\__,_/_/  /_/\___/_/     
+                                        
 
 <!-- badges: start -->
 <!-- badges: end -->
