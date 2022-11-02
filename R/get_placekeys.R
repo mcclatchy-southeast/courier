@@ -40,6 +40,7 @@ parse_bulk_pk <- function(resp) {
 #' @importFrom dplyr %>%
 #' @import httr
 #' @import purrr
+#' @import lubridate
 #'
 #' @return
 #' @export
@@ -130,6 +131,7 @@ get_placekeys <- function(
 
   # start counting. only 100 bulk requests a min.
   start <- Sys.time()
+  chunk_start <- Sys.time()
   resp <- imap(bulk_queries, .f = ~{
 
     # discard any NA values so that lat & long are included or removed as needed
@@ -163,6 +165,8 @@ get_placekeys <- function(
   # make into character vector
   unlist(resp)
 
-  cat('>>> QUERIES FINISHED AT', as.character(Sys.time()), 'AFTER', Sys.time() - start, 'SECONDS\n' )
+  total_time <- lubridate::seconds_to_period(Sys.time() - chunk_start)
+
+  cat('>>> QUERIES FINISHED AT', as.character(Sys.time()), 'AFTER', total_time, '\n' )
 
 }
