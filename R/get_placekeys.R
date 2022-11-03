@@ -177,13 +177,13 @@ get_placekeys <- function(
     parse_bulk_pk(query)
   })
 
-  # make into character vector
-  unlist(resp)
-
   total_time <- lubridate::seconds_to_period(as.numeric(Sys.time()) - as.numeric(start))
 
   if(verbose){
     cat('>>> QUERIES FINISHED AT', as.character(Sys.time()), 'AFTER', as.character(total_time), '\n' )
   }
+
+  # make into character vector
+  unlist(resp)
 
 }

@@ -43,6 +43,9 @@ After installation, you can load the library like any other package.
 ``` r
 ##load courier package
 library(courier)
+
+##load the dplyr package for pipes in examples below
+library(dplyr)
 ```
 
 Create a dataframe with 10,000+ addresses to submit.
