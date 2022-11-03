@@ -15,6 +15,7 @@ get_placekeys(
   longitude = NA,
   strict_address_match = FALSE,
   strict_name_match = FALSE,
+  verbose = FALSE,
   key = Sys.getenv("PLACEKEY_SECRET"),
   ...
 )
@@ -47,6 +48,8 @@ Optional. Default \code{FALSE}.}
 fields identify the POI as having the exact name specified. Optional.
 Default \code{FALSE}.}
 
+\item{verbose}{Include logging to the console. Default \code{FALSE}.}
+
 \item{key}{API key obtained from \url{https://www.placekey.io/}}
 
 \item{...}{Unused; allows \code{purrr::pmap_chr} to call \code{get_placekey}
@@ -63,7 +66,7 @@ and bulk upload function.
 \examples{
 \dontrun{
 #create a test dataframe
-loc_test <- tibble(
+loc_test <- dplyr::tibble(
   location_name = rep(NA, 7),
   street_address = c('421 Fayetteville St', '2619 Western Blvd', '319 Fayetteville St',
                      '1205 Front Street', '2505 Atlantic Ave', '827 W Morgan St',
@@ -73,10 +76,10 @@ loc_test <- tibble(
   postal_code = c("27601", '27606', '27601', '27609','27604', '27603', '27601'),
   iso_country_code = rep('US', 7)
 ) \%>\%
-  slice(rep(1:n(), each = 1443))
+  dplyr::slice(rep(1:dplyr::n(), each = 1443))
 #test the bulk uploader
 loc_test_pk <- loc_test \%>\%
-  mutate(placekey = get_placekeys(
+  dplyr::mutate(placekey = get_placekeys(
     location_name,
     street_address,
     city,
