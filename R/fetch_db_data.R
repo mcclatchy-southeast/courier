@@ -51,6 +51,9 @@ fetch_db_data <- function(dbname = NULL,
   #get the data from the specified table
   df_chunk <- dplyr::tibble(dbGetQuery(con, query))
 
+  #disconnect from the database
+  dbDisconnect(con)
+
   return(df_chunk)
 
 }
