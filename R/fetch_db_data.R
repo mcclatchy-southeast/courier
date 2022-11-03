@@ -22,7 +22,7 @@
 #' @examples
 #' \dontrun{
 #' fetch_db_data(table_name = 'mtcars', offset = 5)
-#' fetch_db_data('exampledb', '123.456.7.89', 'user', 'mtcars')
+#' fetch_db_data('exampledb', '123.456.7.89', 'user', table_name = 'mtcars')
 #' }
 fetch_db_data <- function(dbname = NULL,
                           host = NULL,
