@@ -32,7 +32,8 @@ parse_bulk_pk <- function(resp) {
 #' fields identify the POI as having the exact name specified. Optional.
 #' Default `FALSE`.
 #' @param verbose Include logging to the console. Default `FALSE`.
-#' @param key API key obtained from [https://www.placekey.io/](https://www.placekey.io/)
+#' @param key API key obtained from [https://www.placekey.io/](https://www.placekey.io/).
+#' By default, loaded via environmental variable `PLACEKEY_SECRET`.
 #' @param ... Unused; allows \code{purrr::pmap_chr} to call \code{get_placekey}
 #' with columns not used in the Placekey call.
 #'
@@ -43,7 +44,7 @@ parse_bulk_pk <- function(resp) {
 #' @import purrr
 #' @import lubridate
 #'
-#' @return
+#' @return `dplyr` compatible placekeys. If address doesn't match, returns 'Invalid address'
 #' @export
 #'
 #' @examples
@@ -102,11 +103,12 @@ get_placekeys <- function(
   # figure out how many batches need to be made
   n_chunks <- ceiling(length(street_address)/ n)
   if(verbose){
+    cat('>>> CHUNK SIZE IS', length(street_address), '\n')
     cat('>>> QUERY NEEDS', n_chunks, 'BATCHES\n')
   }
 
   # find the indexes of the chunks
-  chunk_starts <- seq(1, n*n_chunks, by = n)
+  chunk_starts <- seq(1, n * n_chunks, by = n)
   chunk_end <- n * (1:n_chunks)
 
   # modify last element of the vector so there are not extra NAs
@@ -166,6 +168,25 @@ get_placekeys <- function(
       }
     }
 
+    #calculate 60-second interval
+    last_minute <- as.numeric(Sys.time()) - 60
+    #discard all values less than interval, updating globally
+    #query_times <<- discard(query_times, ~ .x < last_minute)
+    assign("query_times", discard(.pkgglobalenv$query_times, ~ .x < last_minute), envir=.pkgglobalenv)
+    query_count <- length(.pkgglobalenv$query_times)
+    if(verbose){
+      cat('>>> RUNNING QUERY COUNT:',  query_count, '\n')
+    }
+
+    #evaluate size of list
+    if( query_count > 100){
+      sleep_time <- query_count - 100
+      if(verbose){
+        cat('>>> 60 SEC RATE LIMIT EXCEEDED. SLEEPING FOR', sleep_time, 'SECONDS AT', as.character(Sys.time()),'\n')
+      }
+      Sys.sleep(sleep_time)
+    }
+
     # using retry thrice just in case
     query <- httr::RETRY("POST",
                          url = "https://api.placekey.io/v1/placekeys",
@@ -173,8 +194,13 @@ get_placekeys <- function(
                          httr::add_headers(apikey = key), encode = "json",
                          times = 3)
 
+    #append time of new query to global variable list
+    #query_times <<- append(query_times, as.numeric(Sys.time()))
+    assign("query_times", append(.pkgglobalenv$query_times, as.numeric(Sys.time())), envir=.pkgglobalenv)
+
     # parse the bulk placekey response
     parse_bulk_pk(query)
+
   })
 
   total_time <- lubridate::seconds_to_period(as.numeric(Sys.time()) - as.numeric(start))

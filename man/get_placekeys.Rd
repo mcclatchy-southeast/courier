@@ -50,10 +50,14 @@ Default \code{FALSE}.}
 
 \item{verbose}{Include logging to the console. Default \code{FALSE}.}
 
-\item{key}{API key obtained from \url{https://www.placekey.io/}}
+\item{key}{API key obtained from \url{https://www.placekey.io/}.
+By default, loaded via environmental variable \code{PLACEKEY_SECRET}.}
 
 \item{...}{Unused; allows \code{purrr::pmap_chr} to call \code{get_placekey}
 with columns not used in the Placekey call.}
+}
+\value{
+\code{dplyr} compatible placekeys. If address doesn't match, returns 'Invalid address'
 }
 \description{
 Fetch placekeys using the bulk API. Automatically paginates. Currently verbose.

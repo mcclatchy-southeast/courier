@@ -5,6 +5,7 @@
 \title{Retrieve a chunk of data}
 \usage{
 fetch_db_data(
+  con = NULL,
   dbname = NULL,
   host = NULL,
   user = NULL,
@@ -16,6 +17,8 @@ fetch_db_data(
 )
 }
 \arguments{
+\item{con}{Pass in a connection without reestablishing one. Default is \code{NULL}.}
+
 \item{dbname}{Name of the database. Default is \code{NULL}.}
 
 \item{host}{Name of the host IP address. Default is \code{NULL}.}
@@ -42,6 +45,6 @@ in a specified size as a \code{dplyr} tibble.
 \examples{
 \dontrun{
 fetch_db_data(table_name = 'mtcars', offset = 5)
-fetch_db_data('exampledb', '123.456.7.89', 'user', 'mtcars')
+fetch_db_data('exampledb', '123.456.7.89', 'user', table_name = 'mtcars')
 }
 }
