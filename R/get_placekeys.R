@@ -15,6 +15,8 @@ parse_bulk_pk <- function(resp) {
 #' and bulk upload function.
 #'
 #' @param location_name The name of the place.
+#' @param latitude The latitude of the place in WGS-84 coordinates.
+#' @param longitude The longitude of the place in WGS-84 coordinates.
 #' @param street_address The street address of the place.
 #' @param city The city where the place is located.
 #' @param region The second-level administrative region below nation for the place.
@@ -52,6 +54,12 @@ parse_bulk_pk <- function(resp) {
 #' #create a test dataframe
 #' loc_test <- dplyr::tibble(
 #'   location_name = rep(NA, 7),
+#'   latitude = c(35.774323243126666, 35.7798015451112, 35.77610354072599,
+#'                35.822304545519394, 35.81508074465238, 35.77966604109918,
+#'                35.77385533560202),
+#'   longitude = c(-78.63876013558352, -78.6745428292959, -78.63886492957215
+#'                -78.6162767007042, -78.61804304210553, -78.65351432957601,
+#'                -78.637435700986),
 #'   street_address = c('421 Fayetteville St', '2619 Western Blvd', '319 Fayetteville St',
 #'                      '1205 Front Street', '2505 Atlantic Ave', '827 W Morgan St',
 #'                      '126 E Cabarrus St'),
@@ -74,6 +82,8 @@ parse_bulk_pk <- function(resp) {
 #'   }
 get_placekeys <- function(
     location_name = NA,
+    latitude = NA,
+    longitude = NA,
     street_address = NA,
     city = NA,
     region = NA,
@@ -119,6 +129,8 @@ get_placekeys <- function(
   bulk_queries <- map2(chunk_starts, chunk_end, .f = ~{
     list(
       query_id = query_id[.x:.y],
+      latitude = latitude[.x:.y],
+      longitude = longitude[.x:.y],
       location_name = location_name[.x:.y],
       street_address = street_address[.x:.y],
       city = city[.x:.y],
