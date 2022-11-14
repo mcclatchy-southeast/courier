@@ -72,6 +72,12 @@ and bulk upload function.
 #create a test dataframe
 loc_test <- dplyr::tibble(
   location_name = rep(NA, 7),
+  latitude = c(35.774323243126666, 35.7798015451112, 35.77610354072599,
+               35.822304545519394, 35.81508074465238, 35.77966604109918,
+               35.77385533560202),
+  longitude = c(-78.63876013558352, -78.6745428292959, -78.63886492957215
+               -78.6162767007042, -78.61804304210553, -78.65351432957601,
+               -78.637435700986),
   street_address = c('421 Fayetteville St', '2619 Western Blvd', '319 Fayetteville St',
                      '1205 Front Street', '2505 Atlantic Ave', '827 W Morgan St',
                      '126 E Cabarrus St'),
