@@ -1,3 +1,6 @@
+#set up a global environment
+.pkgglobalenv <- new.env(parent = emptyenv())
+
 #' Process address in a database
 #'
 #' A main worker function for fetching addresses from a database in chunks,
@@ -37,9 +40,6 @@ process_addresses <- function(dbname = NULL,
                               slackr_webhook = Sys.getenv("SLACKR_WEBHOOK"),
                               verbose = FALSE
                               ){
-  #set up a global environment
-  .pkgglobalenv <- new.env(parent = emptyenv())
-
   #set a primary start time
   master_start <- Sys.time()
 
