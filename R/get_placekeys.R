@@ -140,9 +140,6 @@ get_placekeys <- function(
       # each sub-element is a named list with each query field named
       transpose()
 
-    #debug
-    print(query_json)
-
     return(query_json)
 
 
