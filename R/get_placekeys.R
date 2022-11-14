@@ -123,10 +123,13 @@ get_placekeys <- function(
 
 
   bulk_queries <- map2(chunk_starts, chunk_end, .f = ~{
-    list(
+
+    query_json <- list(
       query_id = query_id[.x:.y],
       location_name = location_name[.x:.y],
-      street_address = street_address[.x:.y],
+      #fix for street address/latlng issue to nullify address when latlng is present
+      street_address = mapply( function(addy, lat){if(is.na(lat)) addy else NA }, street_address[.x:.y], latitude[.x:.y] ),
+      #street_address = street_address[.x:.y],
       city = city[.x:.y],
       region = region[.x:.y],
       postal_code = postal_code[.x:.y],
@@ -136,6 +139,13 @@ get_placekeys <- function(
       # using purrr::transpose to get to nested json compatible list format
       # each sub-element is a named list with each query field named
       transpose()
+
+    #debug
+    print(query_json)
+
+    return(query_json)
+
+
   })
 
 
