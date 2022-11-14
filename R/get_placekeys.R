@@ -125,8 +125,6 @@ get_placekeys <- function(
   bulk_queries <- map2(chunk_starts, chunk_end, .f = ~{
     list(
       query_id = query_id[.x:.y],
-      latitude = latitude[.x:.y],
-      longitude = longitude[.x:.y],
       location_name = location_name[.x:.y],
       street_address = street_address[.x:.y],
       city = city[.x:.y],

@@ -151,13 +151,13 @@ process_addresses <- function(dbname = NULL,
         chunk_pk <- chunk %>%
           dplyr::mutate(placekey = courier::get_placekeys(
             .data$location_name,
-            .data$latitude,
-            .data$longitude,
             .data$street_address,
             .data$city,
             .data$region,
             .data$postal_code,
             .data$iso_country_code,
+            .data$latitude,
+            .data$longitude,
             verbose = verbose)
           )
 
