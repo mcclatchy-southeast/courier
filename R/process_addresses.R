@@ -26,7 +26,6 @@
 #' @export
 #'
 #' @examples
-.pkgglobalenv <- new.env(parent = emptyenv())
 process_addresses <- function(dbname = NULL,
                               host = NULL,
                               user = NULL,
@@ -38,6 +37,8 @@ process_addresses <- function(dbname = NULL,
                               slackr_webhook = Sys.getenv("SLACKR_WEBHOOK"),
                               verbose = FALSE
                               ){
+  #set up a global environment
+  .pkgglobalenv <- new.env(parent = emptyenv())
 
   #set a primary start time
   master_start <- Sys.time()
