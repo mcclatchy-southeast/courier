@@ -15,8 +15,6 @@ parse_bulk_pk <- function(resp) {
 #' and bulk upload function.
 #'
 #' @param location_name The name of the place.
-#' @param latitude The latitude of the place in WGS-84 coordinates.
-#' @param longitude The longitude of the place in WGS-84 coordinates.
 #' @param street_address The street address of the place.
 #' @param city The city where the place is located.
 #' @param region The second-level administrative region below nation for the place.
@@ -82,8 +80,6 @@ parse_bulk_pk <- function(resp) {
 #'   }
 get_placekeys <- function(
     location_name = NA,
-    latitude = NA,
-    longitude = NA,
     street_address = NA,
     city = NA,
     region = NA,
