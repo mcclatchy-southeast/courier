@@ -92,7 +92,7 @@ process_addresses <- function(dbname = NULL,
   #assess size database, counting unkeyed addresses
   #convert to integer from integer64 format
   total_rows <- as.integer(RPostgres::dbGetQuery(check_connection(dbname, host, port, user),
-                                                 "SELECT count(1) FROM db_test WHERE placekey = '';")$count)
+                                                 paste0("SELECT count(1) FROM ", table_name, " WHERE placekey = '';"))$count)
 
   #calculate chunks
   #100 queries at a time, 1000 per minute
@@ -168,15 +168,14 @@ process_addresses <- function(dbname = NULL,
                                 overwrite = TRUE)
 
         #construct a query to replace the processed chunk of table
-        query <- paste('UPDATE', table_name,
-                       'SET placekey = chunk.placekey',
-                       'FROM (',
-                       'SELECT *',
-                       'FROM db_chunk',
+        query <- paste0('UPDATE ', table_name,
+                       ' SET placekey = chunk.placekey',
+                       ' FROM (',
+                       ' SELECT *',
+                       ' FROM db_chunk',
                        ') AS chunk',
-                       'WHERE db_test.id = chunk.id',
-                       ';',
-                       sep = ' '
+                       ' WHERE ', table_name, '.id = chunk.id',
+                       ';'
         )
 
         #execute the query and clear the result
