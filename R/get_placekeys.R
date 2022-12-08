@@ -124,6 +124,9 @@ get_placekeys <- function(
 
   bulk_queries <- map2(chunk_starts, chunk_end, .f = ~{
 
+    #a note about returning errors
+    #if lat/lngs exist, query can only have street_address OR city-region_postal_code
+    #if lat/lngs do not exist, query requires explicit region, which is problematic since we remove NAs later
     query_json <- list(
       query_id = query_id[.x:.y],
       location_name = location_name[.x:.y],
@@ -131,7 +134,9 @@ get_placekeys <- function(
       street_address = mapply( function(addy, lat){if(is.na(lat)) addy else NA }, street_address[.x:.y], latitude[.x:.y] ),
       #street_address = street_address[.x:.y],
       city = city[.x:.y],
-      region = region[.x:.y],
+      #fix for region issue
+      region = mapply( function(addy, region){if(!is.na(addy) & is.na(region)) '' else region }, street_address[.x:.y], region[.x:.y] ),
+      #region = region[.x:.y],
       postal_code = postal_code[.x:.y],
       iso_country_code = iso_country_code[.x:.y],
       latitude = latitude[.x:.y],
@@ -142,9 +147,7 @@ get_placekeys <- function(
 
     return(query_json)
 
-
   })
-
 
   # Batch sending w/ rate limiting ------------------------------------------
 
@@ -158,6 +161,7 @@ get_placekeys <- function(
 
     # discard any NA values so that lat & long are included or removed as needed
     queries <- map(.x, discard, is.na)
+
     if(verbose){
       cat('>>> GETTING BATCH', .y, 'AT',  as.character(Sys.time()), '\n')
     }
@@ -187,7 +191,8 @@ get_placekeys <- function(
     #query_times <<- discard(query_times, ~ .x < last_minute)
     assign("query_times", discard(.pkgglobalenv$query_times, ~ .x < last_minute), envir=.pkgglobalenv)
     query_count <- length(.pkgglobalenv$query_times)
-    if(verbose){
+    if(verbose & query_count > 98){
+      #only log if we're approaching the limit
       cat('>>> RUNNING QUERY COUNT:',  query_count, '\n')
     }
 
