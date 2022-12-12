@@ -1,9 +1,8 @@
 #' Function for parsing bulk API responses
 #' @keywords internal
 parse_bulk_pk <- function(resp) {
-  res <- content(resp)
 
-  map_chr(res, pluck, "placekey", .default = NA_character_)
+  map_chr(resp, pluck, "placekey", .default = NA_character_)
 }
 
 #' Get placekeys using the bulk API
@@ -205,19 +204,35 @@ get_placekeys <- function(
       Sys.sleep(sleep_time)
     }
 
-    # using retry thrice just in case
+    # using retry three times, with an exception for bad request
     query <- httr::RETRY("POST",
                          url = "https://api.placekey.io/v1/placekeys",
-                         body = list(queries = queries, options = options_list),
-                         httr::add_headers(apikey = key), encode = "json",
-                         times = 3)
+                         body = list(queries = queries,
+                                     options = options_list),
+                         httr::add_headers(apikey = key),
+                         encode = "json",
+                         times = 3,
+                         terminate_on = c(400)
+                         )
 
     #append time of new query to global variable list
-    #query_times <<- append(query_times, as.numeric(Sys.time()))
     assign("query_times", append(.pkgglobalenv$query_times, as.numeric(Sys.time())), envir=.pkgglobalenv)
 
-    # parse the bulk placekey response
-    parse_bulk_pk(query)
+    #test for 400/bad request error code and report out
+    #TODO May need to add this for all other status code
+    if(query$status_code == '400'){
+      error_msg <- content(query)$error
+      if(verbose){
+        cat('>>> BAD REQUEST:', toupper(error_msg), '\n' )
+      }
+
+      #pass in unprocessed queries
+      parse_bulk_pk(queries)
+    }
+    else{
+      # parse the bulk placekey response
+      parse_bulk_pk(content(query))
+    }
 
   })
 
