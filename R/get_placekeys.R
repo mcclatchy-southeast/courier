@@ -130,8 +130,12 @@ get_placekeys <- function(
       query_id = query_id[.x:.y],
       location_name = location_name[.x:.y],
       #fix for street address/latlng issue to nullify address when latlng is present
-      street_address = mapply( function(addy, lat){if(is.na(lat)) addy else NA }, street_address[.x:.y], latitude[.x:.y] ),
-      #street_address = street_address[.x:.y],
+      #street_address = mapply( function(addy, lat){if(is.na(lat)) addy else NA }, street_address[.x:.y], latitude[.x:.y] ),
+      #remove street address if lat/lng exists without zip
+      street_address = mapply(
+        function(addy, lat, zip){if(!is.na(lat) & is.na(zip)) NA else addy },
+        street_address[.x:.y], latitude[.x:.y], postal_code[.x:.y]
+        ),
       city = city[.x:.y],
       #fix for region issue
       region = mapply( function(addy, region){if(!is.na(addy) & is.na(region)) '' else region }, street_address[.x:.y], region[.x:.y] ),
