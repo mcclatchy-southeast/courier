@@ -134,7 +134,7 @@ get_placekeys <- function(
       #   function(addy, lat, zip){if(!is.na(lat) & is.na(zip)) NA else addy },
       #   street_address[.x:.y], latitude[.x:.y], postal_code[.x:.y]
       #   ),
-      #street_address = street_address[.x:.y]
+      street_address = street_address[.x:.y],
       city = city[.x:.y],
       #fix for region issue
       #region = mapply( function(addy, region){if(!is.na(addy) & is.na(region)) '' else region }, street_address[.x:.y], region[.x:.y] ),
@@ -224,13 +224,22 @@ get_placekeys <- function(
     #test for 400/bad request error code and report out
     #TODO May need to add this for all other status code
     if(query$status_code == '400'){
-      error_msg <- content(query)
+      error_response <- content(query)
 
-      #DEBUG
-      cat(error_msg, '\n')
+      #check for a message-only error response in cases of nonexistent zips/lng
+      if(!is.null(error_response$message)){
+        error_msg <- toupper(error_response$message)
+      }
+      else if(!is.null(error_response$error)){
+        error_msg <- toupper(error_response$error)
+      }
+      else{
+        error_msg <- 'NO DETAILS PROVIDED'
+      }
 
+      #report error message
       if(verbose){
-        cat('>>> 400 - BAD REQUEST:', toupper(error_msg$error), '\n' )
+        cat('>>> BAD REQUEST, ROW', queries[[1]]$query_id, ':', error_msg, '\n' )
       }
 
       #pass in unprocessed queries
