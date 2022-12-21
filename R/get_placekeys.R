@@ -224,9 +224,9 @@ get_placekeys <- function(
     #test for 400/bad request error code and report out
     #TODO May need to add this for all other status code
     if(query$status_code == '400'){
-      error_msg <- content(query) %>% .$error
+      error_msg <- content(query) %>% .data$error
       if(verbose){
-        cat('>>> BAD REQUEST:', toupper(error_msg), '\n' )
+        cat('>>> 400 - BAD REQUEST:', toupper(error_msg), '\n' )
       }
 
       #pass in unprocessed queries
