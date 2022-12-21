@@ -43,17 +43,6 @@ process_addresses <- function(dbname = NULL,
   #set a primary start time
   master_start <- Sys.time()
 
-  #unused for now
-  calculon_quotes <- list(
-    initialize = "I'm here to serve. I do owe you for giving me this unholy :man_dancing:`melodramatically`:man_dancing: ACTING talent!\n>AUTHENTICATION SUCCESSFUL",
-    pause = 'I better test it with a dramatic... :man_dancing:... pause\n>SLEEPING:',
-    fail = "NooOOOoOoOOoooOoo. (It was supposed to be 'yes' but I added my own twist to it.)\n>SOMETHING WENT WRONG:",
-    warning = 'NooOOo... Line?\n>PROMPT USER:',
-    error = "I'm not familiar with the ... type of _thing_ I'm seeing.\n>SOMETHING WENT WRONG:",
-    identify = "I was all of history's great acting Robots: Acting Unit 0.8, Thespo-mat, David Duchovny!\n>STILL RUNNING:",
-    success = "Who's that singing at your wedding? It's Calculon, Cal-cu-loooon!.\n>STATUS OK:"
-  )
-
   #utility function to keep the db connection alive
   check_connection <- function(dbname, host, port, user){
     #check if connection is valid, left item first
