@@ -225,6 +225,8 @@ get_placekeys <- function(
     #TODO May need to add this for all other status code
     if(query$status_code == '400'){
       error_msg <- content(query)
+      #DEBUG
+      print(error_msg)
       if(verbose){
         cat('>>> 400 - BAD REQUEST:', toupper(error_msg$error), '\n' )
       }
