@@ -7,7 +7,7 @@ parse_bulk_pk <- function(resp) {
 
 #' Get placekeys using the bulk API
 #'
-#' Fetch placekeys using the bulk API. Automatically paginates. Currently verbose.
+#' Fetch placekeys using the bulk API. Automatically paginates.
 #'
 #' \cr\cr Modified version #' of
 #' [Josiah Perry's placekey package](https://github.com/JosiahParry/placekey/blob/master/R/get_placekeys.R)
@@ -30,7 +30,6 @@ parse_bulk_pk <- function(resp) {
 #' @param strict_name_match  If set to `TRUE`, a Placekey is only returned if all
 #' fields identify the POI as having the exact name specified. Optional.
 #' Default `FALSE`.
-#' @param verbose Include logging to the console. Default `FALSE`.
 #' @param key API key obtained from [https://www.placekey.io/](https://www.placekey.io/).
 #' By default, loaded via environmental variable `PLACEKEY_SECRET`.
 #' @param ... Unused; allows \code{purrr::pmap_chr} to call \code{get_placekey}
@@ -42,6 +41,7 @@ parse_bulk_pk <- function(resp) {
 #' @import httr
 #' @import purrr
 #' @import lubridate
+#' @import logger
 #'
 #' @return `dplyr` compatible placekeys. If address doesn't match, returns 'Invalid address'
 #' @export
@@ -88,7 +88,6 @@ get_placekeys <- function(
     longitude = NA,
     strict_address_match = FALSE,
     strict_name_match = FALSE,
-    verbose = FALSE,
     key = Sys.getenv("PLACEKEY_SECRET"),
     ...
 ) {
@@ -107,10 +106,9 @@ get_placekeys <- function(
 
   # figure out how many batches need to be made
   n_chunks <- ceiling(length(street_address)/ n)
-  if(verbose){
-    cat('>>> CHUNK SIZE IS', length(street_address), '\n')
-    cat('>>> QUERY NEEDS', n_chunks, 'BATCHES\n')
-  }
+
+  #log chunk/batch size
+  logger::log_info('PROCESSING ', length(street_address), ' ROWS IN ', n_chunks, ' BATCHES')
 
   # find the indexes of the chunks
   chunk_starts <- seq(1, n * n_chunks, by = n)
@@ -124,20 +122,11 @@ get_placekeys <- function(
   bulk_queries <- map2(chunk_starts, chunk_end, .f = ~{
 
     #a note about returning errors
-    #if lat/lngs exist, query can only have street_address OR city-region_postal_code
-    #if lat/lngs do not exist, query requires explicit region, which is problematic since we remove NAs later
     query_json <- list(
       query_id = query_id[.x:.y],
       location_name = location_name[.x:.y],
-      #remove street address if lat/lng exists without zip
-      # street_address = mapply(
-      #   function(addy, lat, zip){if(!is.na(lat) & is.na(zip)) NA else addy },
-      #   street_address[.x:.y], latitude[.x:.y], postal_code[.x:.y]
-      #   ),
       street_address = street_address[.x:.y],
       city = city[.x:.y],
-      #fix for region issue
-      #region = mapply( function(addy, region){if(!is.na(addy) & is.na(region)) '' else region }, street_address[.x:.y], region[.x:.y] ),
       region = region[.x:.y],
       postal_code = postal_code[.x:.y],
       iso_country_code = iso_country_code[.x:.y],
@@ -155,18 +144,14 @@ get_placekeys <- function(
 
   # start counting. only 100 bulk requests a min.
   start <- Sys.time()
-  if(verbose){
-    cat('>>> STARTING QUERY AT', as.character(start), '\n')
-  }
 
   resp <- imap(bulk_queries, .f = ~{
 
     # discard any NA values so that lat & long are included or removed as needed
     queries <- map(.x, discard, is.na)
 
-    if(verbose){
-      cat('>>> GETTING BATCH', .y, 'AT',  as.character(Sys.time()), '\n')
-    }
+    #log batch number
+    logger::log_trace('GETTING BATCH ', .y)
 
     # if we reach the 101st we sleep the remainder of the minute (if any is left)
     if ((.y > 1) & (.y %% 100 == 1)) {
@@ -175,35 +160,33 @@ get_placekeys <- function(
       remainder <- (.y %/% 100) * 60 - (as.numeric(Sys.time()) - as.numeric(start))
 
       if (remainder > 0) {
-        if(verbose){
-          cat('>>> SLEEPING FOR', remainder, 'SECONDS AT', as.character(Sys.time()),'\n')
-        }
+        #log sleep time
+        logger::log_debug('SLEEPING FOR ', remainder, ' SECONDS')
 
         Sys.sleep(remainder)
 
-        if(verbose){
-          cat('>>> RESTARTING AT', as.character(Sys.time()), '\n')
-        }
+        #log restart time
+        logger::log_debug('RESTARTING')
       }
     }
 
     #calculate 60-second interval
     last_minute <- as.numeric(Sys.time()) - 60
     #discard all values less than interval, updating globally
-    #query_times <<- discard(query_times, ~ .x < last_minute)
     assign("query_times", discard(.pkgglobalenv$query_times, ~ .x < last_minute), envir=.pkgglobalenv)
     query_count <- length(.pkgglobalenv$query_times)
-    if(verbose & query_count > 98){
-      #only log if we're approaching the limit
-      cat('>>> RUNNING QUERY COUNT:',  query_count, '\n')
+
+    #only log if we're approaching the limit
+    if(query_count > 98){
+      logger::log_debug('RUNNING QUERY COUNT: ', query_count)
     }
 
     #evaluate size of list
     if( query_count > 100){
       sleep_time <- query_count - 100
-      if(verbose){
-        cat('>>> 60 SEC RATE LIMIT EXCEEDED. SLEEPING FOR', sleep_time, 'SECONDS AT', as.character(Sys.time()),'\n')
-      }
+
+      #log sleep time
+      logger::log_debug('60 SEC RATE LIMIT EXCEEDED. SLEEPING FOR ', sleep_time, ' SECONDS')
       Sys.sleep(sleep_time)
     }
 
@@ -214,7 +197,8 @@ get_placekeys <- function(
                                      options = options_list),
                          httr::add_headers(apikey = key),
                          encode = "json",
-                         times = 3,
+                         times = 5, #increase the tries now that we've weeded out bad requests
+                         pause_min = 5, #increase pause time in case of server issues
                          terminate_on = c(400)
                          )
 
@@ -238,9 +222,7 @@ get_placekeys <- function(
       }
 
       #report error message
-      if(verbose){
-        cat('>>> BAD REQUEST, ROW', queries[[1]]$query_id, ':', error_msg, '\n' )
-      }
+      logger::log_warn('BAD REQUEST, ROW ', queries[[1]]$query_id, ': ', error_msg)
 
       #pass in unprocessed queries
       parse_bulk_pk(queries)
@@ -249,14 +231,12 @@ get_placekeys <- function(
       # parse the bulk placekey response
       parse_bulk_pk(content(query))
     }
-
   })
 
   total_time <- lubridate::seconds_to_period(as.numeric(Sys.time()) - as.numeric(start))
 
-  if(verbose){
-    cat('>>> QUERIES FINISHED AT', as.character(Sys.time()), 'AFTER', as.character(total_time), '\n' )
-  }
+  #report successful processing
+  logger::log_success('BATCHES FINISHED AT ', as.character(Sys.time()), ' AFTER ', as.character(total_time))
 
   # make into character vector
   unlist(resp)

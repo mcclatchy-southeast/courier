@@ -20,6 +20,7 @@
 #' @importFrom purrr discard
 #' @importFrom dplyr %>%
 #' @import lubridate
+#' @import logger
 #' @import DBI
 #' @import RPostgres
 #' @import slackr
@@ -40,6 +41,23 @@ process_addresses <- function(dbname = NULL,
                               slackr_webhook = Sys.getenv("SLACKR_WEBHOOK"),
                               verbose = FALSE
                               ){
+
+  #set log level based on verbose setting
+  if(verbose){
+    logger::log_threshold(logger::TRACE, namespace = logger::log_namespaces())
+  }
+  else{
+    logger::log_threshold(logger::INFO, namespace = logger::log_namespaces())
+  }
+
+  #create a log file in the current working directory
+  log_path <- paste0(getwd(), '/courier_log', format(Sys.time(), '%Y%m%d%H%M'))
+  file.create(log_path)
+  logger::log_trace('CREATED LOG FILE AT ', log_path)
+
+  #set logger to read out to both console and text log
+  logger::log_appender(logger::appender_tee(file = log_path, append = TRUE))
+
   #set a primary start time
   master_start <- Sys.time()
 
@@ -73,8 +91,8 @@ process_addresses <- function(dbname = NULL,
                            incoming_webhook_url = slackr_webhook)
     },
     error = function(e){
-      #executes whether verbose or not
-      cat('>>> ERROR:', e$message,'\n')
+      #log error
+      logger::log_error(e$message)
     }
 
   )
@@ -102,10 +120,9 @@ process_addresses <- function(dbname = NULL,
                            '\n*Total rows:* ', format(total_rows, big.mark = ',', scientific = FALSE),
                            '\t*Total chunks:* ', format(n_chunks, big.mark = ',', scientific = FALSE)
                            ) )
-  #and again if verbose is true
-  if(verbose){
-    cat('>>> PROCESSING', format(total_rows, big.mark = ',', scientific = FALSE), 'TOTAL ROWS', 'AT', as.character(Sys.time()),'\n')
-  }
+
+  #log the top-level readout
+  logger::log_info('PROCESSING ', format(total_rows, big.mark = ',', scientific = FALSE), ' TOTAL ROWS')
 
   #set up a loop with a 1-indexed counter
   while(sequence_count <= n_chunks){
@@ -113,16 +130,14 @@ process_addresses <- function(dbname = NULL,
     #log lap start
     lap_start <- Sys.time()
 
-    #report on query start time
-    if(verbose){
-      cat('>>> STARTING QUERY', sequence_count, 'AT', as.character(lap_start), '\n')
-    }
+    #log new query start
+    logger::log_info('STARTING QUERY ', sequence_count)
 
     #report completed sequence progress in intervals of 10
     if( sequence_count > 1 & (sequence_count %% 10) == 1 ){
       elapsed_time <- as.character(lubridate::seconds_to_period(as.numeric(Sys.time()) - as.numeric(master_start)))
       slackr::slackr_msg(paste0('*Rows processed:* ', format(limit * (sequence_count - 1), big.mark = ',', scientific = FALSE),
-                                '\n*Lap start:* ', as.character(Sys.time()), '\t*Elapsed time:* ', elapsed_time
+                                '\n*Lap:* ', as.character(Sys.time()), '\t*Elapsed:* ', elapsed_time
                                ))
     }
 
@@ -147,8 +162,7 @@ process_addresses <- function(dbname = NULL,
             .data$postal_code,
             .data$iso_country_code,
             .data$latitude,
-            .data$longitude,
-            verbose = verbose)
+            .data$longitude)
           )
 
         #write a temporary table to the database
@@ -178,22 +192,22 @@ process_addresses <- function(dbname = NULL,
 
         #calculate lap time
         lap_time <- as.character(lubridate::seconds_to_period(as.numeric(Sys.time()) - as.numeric(lap_start)))
-        #report lap time
-        if(verbose){
-          cat('>>> QUERY', sequence_count, 'COMPLETED AFTER', as.character(lap_time), '\n')
-        }
+
+        #log elapsed time for completed query
+        logger::log_success('QUERY ', sequence_count, ' COMPLETED AFTER ', as.character(lap_time))
 
         #get the remaining time
         pk_remainder <- 60 - (as.numeric(Sys.time()) - as.numeric(pk_start))
         #check to see if any of the minute remains if we're not on the last chunk
         if(pk_remainder > 0 & sequence_count != n_chunks){
-          if(verbose){
-            cat('>>> SLEEPING FOR', pk_remainder, 'SECONDS AT', as.character(Sys.time()),'\n')
-          }
+
+          #log sleep time
+          logger::log_debug('SLEEPING FOR ', pk_remainder, ' SECONDS')
+
           Sys.sleep(pk_remainder)
-          if(verbose){
-            cat('>>> RESTARTING AT', as.character(Sys.time()), '\n')
-          }
+
+          #log restart
+          logger::log_debug('RESTARTING...')
         }
 
         #update the offset
@@ -206,7 +220,9 @@ process_addresses <- function(dbname = NULL,
     if(class(pk_response) == "try-error") {
       errmsg <- geterrmessage()
       #report error to console
-      cat('>>> ERROR:', errmsg,'\n')
+      #cat('>>> ERROR:', errmsg,'\n')
+      logger::log_error(errmsg)
+
       #report error to slack
       slackr::slackr_msg(paste0(':rotating_light:*ERROR ENCOUNTERED ON CHUNK ', sequence_count, ' AT ', as.character(Sys.time()), '*:rotating_light:\n',
                                 'somewhere after row ', format(limit * (sequence_count - 1), big.mark = ',', scientific = FALSE, '\n'),
