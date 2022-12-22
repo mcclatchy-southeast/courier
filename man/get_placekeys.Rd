@@ -15,7 +15,6 @@ get_placekeys(
   longitude = NA,
   strict_address_match = FALSE,
   strict_name_match = FALSE,
-  verbose = FALSE,
   key = Sys.getenv("PLACEKEY_SECRET"),
   ...
 )
@@ -48,8 +47,6 @@ Optional. Default \code{FALSE}.}
 fields identify the POI as having the exact name specified. Optional.
 Default \code{FALSE}.}
 
-\item{verbose}{Include logging to the console. Default \code{FALSE}.}
-
 \item{key}{API key obtained from \url{https://www.placekey.io/}.
 By default, loaded via environmental variable \code{PLACEKEY_SECRET}.}
 
@@ -60,7 +57,7 @@ with columns not used in the Placekey call.}
 \code{dplyr} compatible placekeys. If address doesn't match, returns 'Invalid address'
 }
 \description{
-Fetch placekeys using the bulk API. Automatically paginates. Currently verbose.
+Fetch placekeys using the bulk API. Automatically paginates.
 }
 \details{
 \cr\cr Modified version #' of
